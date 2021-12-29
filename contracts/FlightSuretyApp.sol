@@ -34,6 +34,8 @@ contract FlightSuretyApp {
     }
     mapping(bytes32 => Flight) private flights;
 
+    FlightSuretyDataReference flightSuretyData;
+
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
@@ -68,16 +70,18 @@ contract FlightSuretyApp {
      * @dev Contract constructor
      *
      */
-    constructor() public {
+    constructor(address flightSuretyDataContract) public {
         contractOwner = msg.sender;
+        flightSuretyData = FlightSuretyDataReference(flightSuretyDataContract);
     }
 
     /********************************************************************************************/
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public pure returns (bool) {
-        return true; // Modify to call data contract's status
+    function isOperational() public view returns (bool) {
+        // return true; // Modify to call data contract's status
+        return flightSuretyData.isOperational();
     }
 
     /********************************************************************************************/
@@ -297,4 +301,10 @@ contract FlightSuretyApp {
     }
 
     // endregion
+}
+
+// Data Reference/Interface
+
+contract FlightSuretyDataReference {
+    function isOperational() external view returns (bool);
 }
