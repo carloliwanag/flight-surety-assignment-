@@ -12,6 +12,23 @@ contract FlightSuretyData {
     address private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
 
+    struct Airline {
+        bool isRegistered;
+        bool isFunded;
+        address airlineAddress;
+        string name;
+    }
+
+    struct Candidate {
+        mapping(address => bool) voters;
+        uint256 noOfVotes;
+        bool exist;
+    }
+
+    Airline[] private registeredAirlines;
+    mapping(address => Airline) registeredAirlinesMapping;
+    mapping(address => Candidate) votes;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -71,6 +88,34 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function isRegisteredAirline(address _address)
+        external
+        view
+        returns (bool)
+    {
+        return registeredAirlinesMapping[_address].isRegistered;
+    }
+
+    function isFundedAirline(address _address) external view returns (bool) {
+        return registeredAirlinesMapping[_address].isFunded;
+    }
+
+    function getVotesOfAirline(address _address)
+        external
+        view
+        returns (uint256)
+    {
+        return votes[_address].noOfVotes;
+    }
+
+    function hasVotedAirline(address _address, address _voter)
+        external
+        view
+        returns (bool)
+    {
+        votes[_address].voters[_voter];
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -80,7 +125,41 @@ contract FlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline() external pure {}
+    function registerAirline(
+        string _name,
+        bool _isFunded,
+        bool _isRegistered,
+        address _address
+    ) external {
+        Airline memory newAirline = Airline({
+            name: _name,
+            isRegistered: _isRegistered,
+            isFunded: _isFunded,
+            airlineAddress: _address
+        });
+
+        // this should be called when the airline has paid the ante
+        //registeredAirlines.push(newAirline);
+        registerdAirlinesMapping[_address] = newAirline;
+    }
+
+    function getNumberOfRegiseteredAirlines() view extenal returns (uint256) {
+        return registeredAirlines.length;
+    }
+
+    function voteAirline(address _address, address _voter) external {
+        if (votes[_address].exist) {
+            Candidate storage candidate = votes[_address];
+            candidate.voters[_voter] = true;
+            candidate.noOfVotes = candidate.noOfVotes.add(1);
+        } else {
+            Candidate memory candidate;
+            candidate.voters[_voter] = true;
+            candidate.noOfVotes = 1;
+            candidate.exist = true;
+            votes[_address] = candidate;
+        }
+    }
 
     /**
      * @dev Buy insurance for a flight
