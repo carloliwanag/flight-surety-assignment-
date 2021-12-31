@@ -133,9 +133,9 @@ contract FlightSuretyApp {
      */
     function registerAirline(address _address, string _name)
         external
-        requireOperational
+        requireIsOperational
         requireRegisteredAirline(msg.sender)
-        requireFundedAirline(msg.sender)
+        requiredFundedAirline(msg.sender)
     {
         if (
             flightSuretyData.getNumberOfRegiseteredAirlines() <
@@ -147,11 +147,9 @@ contract FlightSuretyApp {
                 !hasVotedAirline(_address, msg.sender),
                 "Caller has already voted for this airline"
             );
-            uint256 memory noOfAirlines = flightSuretyData
+            uint256 noOfAirlines = flightSuretyData
                 .getNumberOfRegiseteredAirlines();
-            uint256 memory noOfVotes = flightSuretyData.getVotesOfAirline(
-                _address
-            );
+            uint256 noOfVotes = flightSuretyData.getVotesOfAirline(_address);
 
             if (noOfVotes.add(1) > noOfAirlines.div(2)) {
                 flightSuretyData.registerAirline(_name, false, true, _address);
@@ -159,6 +157,16 @@ contract FlightSuretyApp {
                 flightSuretyData.voteAirline(_address, msg.sender);
             }
         }
+    }
+
+    function fundAirlineAnte()
+        external
+        payable
+        requireRegisteredAirline(msg.sender)
+    {
+        require(msg.value >= 10 ether, "Airline does not have enough ethers");
+        address(flightSuretyData).transfer(msg.value);
+        flightSuretyData.payAnte(msg.sender);
     }
 
     /**
@@ -376,7 +384,7 @@ contract FlightSuretyDataReference {
         address _address
     ) external;
 
-    function getNumberOfRegiseteredAirlines() view extenal returns (uint256);
+    function getNumberOfRegiseteredAirlines() external view returns (uint256);
 
     function isRegisteredAirline(address _address) external view returns (bool);
 
@@ -393,4 +401,6 @@ contract FlightSuretyDataReference {
         returns (bool);
 
     function voteAirline(address _address, address _voter) external;
+
+    function payAnte(address _airline) external payable;
 }

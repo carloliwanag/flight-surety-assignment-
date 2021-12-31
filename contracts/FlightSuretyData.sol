@@ -25,7 +25,7 @@ contract FlightSuretyData {
         bool exist;
     }
 
-    Airline[] private registeredAirlines;
+    address[] private registeredAirlines;
     mapping(address => Airline) registeredAirlinesMapping;
     mapping(address => Candidate) votes;
 
@@ -37,8 +37,16 @@ contract FlightSuretyData {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor() public {
+    constructor(address _firstAirline) public {
         contractOwner = msg.sender;
+
+        // deploy the first airline
+        registeredAirlinesMapping[_firstAirline] = Airline({
+            isRegistered: true,
+            isFunded: false,
+            airlineAddress: _firstAirline,
+            name: "First Airline"
+        });
     }
 
     /********************************************************************************************/
@@ -140,10 +148,10 @@ contract FlightSuretyData {
 
         // this should be called when the airline has paid the ante
         //registeredAirlines.push(newAirline);
-        registerdAirlinesMapping[_address] = newAirline;
+        registeredAirlinesMapping[_address] = newAirline;
     }
 
-    function getNumberOfRegiseteredAirlines() view extenal returns (uint256) {
+    function getNumberOfRegiseteredAirlines() external view returns (uint256) {
         return registeredAirlines.length;
     }
 
@@ -153,12 +161,20 @@ contract FlightSuretyData {
             candidate.voters[_voter] = true;
             candidate.noOfVotes = candidate.noOfVotes.add(1);
         } else {
-            Candidate memory candidate;
-            candidate.voters[_voter] = true;
-            candidate.noOfVotes = 1;
-            candidate.exist = true;
-            votes[_address] = candidate;
+            Candidate freshCandidate;
+            freshCandidate.voters[_voter] = true;
+            freshCandidate.noOfVotes = 1;
+            freshCandidate.exist = true;
+            votes[_address] = freshCandidate;
         }
+    }
+
+    function payAnte(address _airline) external payable {
+        //require(registeredAirlinesMapping[msg.sender], "Not registered");
+        //require(msg.value >= 10 ether, "Airline does not have enough ethers");
+
+        registeredAirlinesMapping[_airline].isFunded = true;
+        registeredAirlines.push(_airline);
     }
 
     /**

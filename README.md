@@ -71,7 +71,7 @@ mapping(address => Airline) registeredAirlinesMapping;
 To handle the business requirement for the consensus, a separate array of registered (paid) airline is maintained to get the current number of registered airlines. And anothe pair of struct and mapping for the voted airline that will be registerd to monitor the number of votes it has received.
 
 ```
-Airline[] private registeredAirlines;
+address[] private registeredAirlines;
 
 struct Candidate {
         mapping(address => bool) voters;
