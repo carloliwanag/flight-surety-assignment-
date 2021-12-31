@@ -50,3 +50,47 @@ Deploy the contents of the ./dapp folder
 * [Solidity Language Reference](http://solidity.readthedocs.io/en/v0.4.24/)
 * [Ethereum Blockchain Explorer](https://etherscan.io/)
 * [Web3Js Reference](https://github.com/ethereum/wiki/wiki/JavaScript-API)
+
+## Implementation Details
+
+### Airline Registration
+
+To hold the registered airlines, an Airline struct and a mapping of the Airline struct is created.
+
+```
+struct Airline {
+        bool isRegistered;
+        bool isFunded;
+        address airlineAddress;
+        string name;
+    }
+
+mapping(address => Airline) registeredAirlinesMapping;
+```
+
+To handle the business requirement for the consensus, a separate array of registered (paid) airline is maintained to get the current number of registered airlines. And anothe pair of struct and mapping for the voted airline that will be registerd to monitor the number of votes it has received.
+
+```
+address[] private registeredAirlines;
+
+struct Candidate {
+        mapping(address => bool) voters;
+        uint256 noOfVotes;
+        bool exist;
+    }
+mapping(address => Candidate) votes;
+```
+
+For an airline to register another airline, the ff modifiers should be met:
+```
+requireOperational
+requireRegisteredAirline(msg.sender)
+requireFundedAirline(msg.sender)
+```
+and it should not be allowed to vote more than twice on the same airline
+
+```
+require(!hasVotedAirline(_address, msg.sender), "Caller has already voted for this airline");
+```
+
+To facilitate Multiparty consensus, the number of votes an airline has received is compared to the number of registered (paid) airlines array divided by 2. If greater, the airline is registered else, a vote is added onto it.

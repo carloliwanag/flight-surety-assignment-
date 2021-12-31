@@ -12,6 +12,23 @@ contract FlightSuretyData {
     address private contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
 
+    struct Airline {
+        bool isRegistered;
+        bool isFunded;
+        address airlineAddress;
+        string name;
+    }
+
+    struct Candidate {
+        mapping(address => bool) voters;
+        uint256 noOfVotes;
+        bool exist;
+    }
+
+    address[] private registeredAirlines;
+    mapping(address => Airline) registeredAirlinesMapping;
+    mapping(address => Candidate) votes;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -20,8 +37,16 @@ contract FlightSuretyData {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor() public {
+    constructor(address _firstAirline) public {
         contractOwner = msg.sender;
+
+        // deploy the first airline
+        registeredAirlinesMapping[_firstAirline] = Airline({
+            isRegistered: true,
+            isFunded: false,
+            airlineAddress: _firstAirline,
+            name: "First Airline"
+        });
     }
 
     /********************************************************************************************/
@@ -71,6 +96,34 @@ contract FlightSuretyData {
         operational = mode;
     }
 
+    function isRegisteredAirline(address _address)
+        external
+        view
+        returns (bool)
+    {
+        return registeredAirlinesMapping[_address].isRegistered;
+    }
+
+    function isFundedAirline(address _address) external view returns (bool) {
+        return registeredAirlinesMapping[_address].isFunded;
+    }
+
+    function getVotesOfAirline(address _address)
+        external
+        view
+        returns (uint256)
+    {
+        return votes[_address].noOfVotes;
+    }
+
+    function hasVotedAirline(address _address, address _voter)
+        external
+        view
+        returns (bool)
+    {
+        votes[_address].voters[_voter];
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -80,7 +133,49 @@ contract FlightSuretyData {
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline() external pure {}
+    function registerAirline(
+        string _name,
+        bool _isFunded,
+        bool _isRegistered,
+        address _address
+    ) external {
+        Airline memory newAirline = Airline({
+            name: _name,
+            isRegistered: _isRegistered,
+            isFunded: _isFunded,
+            airlineAddress: _address
+        });
+
+        // this should be called when the airline has paid the ante
+        //registeredAirlines.push(newAirline);
+        registeredAirlinesMapping[_address] = newAirline;
+    }
+
+    function getNumberOfRegiseteredAirlines() external view returns (uint256) {
+        return registeredAirlines.length;
+    }
+
+    function voteAirline(address _address, address _voter) external {
+        if (votes[_address].exist) {
+            Candidate storage candidate = votes[_address];
+            candidate.voters[_voter] = true;
+            candidate.noOfVotes = candidate.noOfVotes.add(1);
+        } else {
+            Candidate freshCandidate;
+            freshCandidate.voters[_voter] = true;
+            freshCandidate.noOfVotes = 1;
+            freshCandidate.exist = true;
+            votes[_address] = freshCandidate;
+        }
+    }
+
+    function payAnte(address _airline) external payable {
+        //require(registeredAirlinesMapping[msg.sender], "Not registered");
+        //require(msg.value >= 10 ether, "Airline does not have enough ethers");
+
+        registeredAirlinesMapping[_airline].isFunded = true;
+        registeredAirlines.push(_airline);
+    }
 
     /**
      * @dev Buy insurance for a flight

@@ -24,6 +24,8 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
+    uint8 private constant NO_REGISTERED_AIRLINES_THRESHOLD = 4;
+
     address private contractOwner; // Account used to deploy contract
 
     struct Flight {
@@ -50,7 +52,7 @@ contract FlightSuretyApp {
      */
     modifier requireIsOperational() {
         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");
+        require(isOperational(), "Contract is currently not operational");
         _; // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -59,6 +61,27 @@ contract FlightSuretyApp {
      */
     modifier requireContractOwner() {
         require(msg.sender == contractOwner, "Caller is not contract owner");
+        _;
+    }
+
+    modifier requireRegisteredAirline(address _address) {
+        require(
+            isRegisteredAirline(_address),
+            "Caller is not a registered airline"
+        );
+        _;
+    }
+
+    modifier requiredFundedAirline(address _address) {
+        require(isFundedAirline(_address), "Caller is not a funded airline");
+        _;
+    }
+
+    modifier requiredNotVoted(address _address, address _voter) {
+        require(
+            !hasVotedAirline(_address, _voter),
+            "Caller has already voted for this airline"
+        );
         _;
     }
 
@@ -84,6 +107,22 @@ contract FlightSuretyApp {
         return flightSuretyData.isOperational();
     }
 
+    function isRegisteredAirline(address _address) public view returns (bool) {
+        return flightSuretyData.isRegisteredAirline(_address);
+    }
+
+    function isFundedAirline(address _address) public view returns (bool) {
+        return flightSuretyData.isFundedAirline(_address);
+    }
+
+    function hasVotedAirline(address _address, address _voter)
+        public
+        view
+        returns (bool)
+    {
+        return flightSuretyData.hasVotedAirline(_address, _voter);
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -92,12 +131,42 @@ contract FlightSuretyApp {
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline()
+    function registerAirline(address _address, string _name)
         external
-        pure
-        returns (bool success, uint256 votes)
+        requireIsOperational
+        requireRegisteredAirline(msg.sender)
+        requiredFundedAirline(msg.sender)
     {
-        return (success, 0);
+        if (
+            flightSuretyData.getNumberOfRegiseteredAirlines() <
+            NO_REGISTERED_AIRLINES_THRESHOLD
+        ) {
+            flightSuretyData.registerAirline(_name, false, true, _address);
+        } else {
+            require(
+                !hasVotedAirline(_address, msg.sender),
+                "Caller has already voted for this airline"
+            );
+            uint256 noOfAirlines = flightSuretyData
+                .getNumberOfRegiseteredAirlines();
+            uint256 noOfVotes = flightSuretyData.getVotesOfAirline(_address);
+
+            if (noOfVotes.add(1) > noOfAirlines.div(2)) {
+                flightSuretyData.registerAirline(_name, false, true, _address);
+            } else {
+                flightSuretyData.voteAirline(_address, msg.sender);
+            }
+        }
+    }
+
+    function fundAirlineAnte()
+        external
+        payable
+        requireRegisteredAirline(msg.sender)
+    {
+        require(msg.value >= 10 ether, "Airline does not have enough ethers");
+        address(flightSuretyData).transfer(msg.value);
+        flightSuretyData.payAnte(msg.sender);
     }
 
     /**
@@ -307,4 +376,31 @@ contract FlightSuretyApp {
 
 contract FlightSuretyDataReference {
     function isOperational() external view returns (bool);
+
+    function registerAirline(
+        string _name,
+        bool _isFunded,
+        bool _isRegistered,
+        address _address
+    ) external;
+
+    function getNumberOfRegiseteredAirlines() external view returns (uint256);
+
+    function isRegisteredAirline(address _address) external view returns (bool);
+
+    function isFundedAirline(address _address) external view returns (bool);
+
+    function getVotesOfAirline(address _address)
+        external
+        view
+        returns (uint256);
+
+    function hasVotedAirline(address _address, address _voter)
+        external
+        view
+        returns (bool);
+
+    function voteAirline(address _address, address _voter) external;
+
+    function payAnte(address _airline) external payable;
 }
