@@ -1,0 +1,1 @@
+ganache-cli -m "render bachelor above exact flash cloth license wine guard edit sugar enhance" --accounts=100 -p 8545
