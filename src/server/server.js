@@ -14,18 +14,23 @@ let flightSuretyApp = new web3.eth.Contract(
   config.appAddress
 );
 
+let accountsAddresses = [];
 const oracleFee = web3.utils.toWei('1.1', 'ether');
 // const gasLimit = web3.utils.toWei('0.000000001', 'ether');
 const gasLimit = 6721975;
-const { registerOracle, getMyIndexes } = flightSuretyApp.methods;
+
+// contract methods
+const { registerOracle, getMyIndexes, submitOracleResponse } =
+  flightSuretyApp.methods;
 
 const noOfOracles = 25;
+const startingAccountsIndex = 20;
 
 let oracles = [];
 
 web3.eth.defaultAccount = web3.eth.accounts[0];
 
-// register oracle
+// start register oracle
 function registerOracles(noOfOracles, startingAccountsIndex) {
   const registerOneOracle = (account) => {
     return registerOracle().send({
@@ -37,7 +42,7 @@ function registerOracles(noOfOracles, startingAccountsIndex) {
 
   return web3.eth.getAccounts().then((accounts) => {
     //console.log(accounts);
-
+    accountsAddresses = accounts;
     let promises = [];
 
     for (let i = 0; i < noOfOracles; i++) {
@@ -69,22 +74,93 @@ function registerOracles(noOfOracles, startingAccountsIndex) {
   });
 }
 
-registerOracles(noOfOracles, 20)
+registerOracles(noOfOracles, startingAccountsIndex)
   .then((indexes) => {
-    oracles = indexes;
+    oracles = indexes.map((value, index) => {
+      return {
+        address: accountsAddresses[index + startingAccountsIndex],
+        indexes: value,
+      };
+    });
+
+    // oracles = indexes;
     // console.log('oracles: ', oracles);
   })
   .catch((error) => console.log(error));
 
 // end register oracle
 
+// start generate flight status response
+
+function generateRandomResponse(oracles, values) {
+  const STATUS_CODE_UNKNOWN = 0;
+  const STATUS_CODE_ON_TIME = 10;
+  const STATUS_CODE_LATE_AIRLINE = 20;
+  const STATUS_CODE_LATE_WEATHER = 30;
+  const STATUS_CODE_LATE_TECHNICAL = 40;
+  const STATUS_CODE_LATE_OTHER = 50;
+
+  const responseArr = [
+    STATUS_CODE_UNKNOWN,
+    STATUS_CODE_ON_TIME,
+    STATUS_CODE_LATE_AIRLINE,
+    STATUS_CODE_LATE_WEATHER,
+    STATUS_CODE_LATE_TECHNICAL,
+    STATUS_CODE_LATE_OTHER,
+  ];
+
+  const len = oracles.length;
+  const good = len / 2 + 1;
+  let resp = STATUS_CODE_ON_TIME;
+  oracles.forEach((oracle, index) => {
+    if (index > good) {
+      resp = responseArr[Math.floor(Math.random() * responseArr.length)];
+    }
+
+    console.log(
+      `sendind this response for oracle address ${oracle.address}:  ${resp}`
+    );
+
+    submitOracleResponse(
+      values.index,
+      values.airline,
+      values.flight,
+      +values.timestamp,
+      resp
+    ).send({
+      from: oracle.address,
+      gas: gasLimit,
+    });
+  });
+}
+
+// end generate flight status response
 flightSuretyApp.events.OracleRequest(
   {
     fromBlock: 0,
   },
   function (error, event) {
     if (error) console.log(error);
-    console.log(event);
+    // console.log(event);
+
+    const { returnValues } = event;
+
+    // console.log(oracles);
+    // console.log(returnValues);
+
+    // this is a bit weird..
+    let eventValues = JSON.stringify(returnValues);
+    eventValues = JSON.parse(eventValues);
+
+    console.log('OracleRequest event values:', eventValues);
+
+    const matchedOracles = oracles.filter(
+      (oracle) => oracle.indexes.indexOf(eventValues.index) !== -1
+    );
+
+    console.log('matched oracles for the sent index: ', matchedOracles);
+
+    generateRandomResponse(matchedOracles, eventValues);
   }
 );
 
