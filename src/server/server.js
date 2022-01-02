@@ -19,56 +19,64 @@ const oracleFee = web3.utils.toWei('1.1', 'ether');
 const gasLimit = 6721975;
 const { registerOracle, getMyIndexes } = flightSuretyApp.methods;
 
+const noOfOracles = 25;
+
+let oracles = [];
+
 web3.eth.defaultAccount = web3.eth.accounts[0];
 
-// web3.eth.personal.newAccount().then((account) => {
-//   console.log('account: ', account);
-// });
-
-console.log(oracleFee);
-
 // register oracle
-function registerOneOracle(account) {
-  return registerOracle().send({
-    from: account,
-    value: oracleFee,
-    gas: gasLimit,
+function registerOracles(noOfOracles, startingAccountsIndex) {
+  const registerOneOracle = (account) => {
+    return registerOracle().send({
+      from: account,
+      value: oracleFee,
+      gas: gasLimit,
+    });
+  };
+
+  return web3.eth.getAccounts().then((accounts) => {
+    //console.log(accounts);
+
+    let promises = [];
+
+    for (let i = 0; i < noOfOracles; i++) {
+      const response = registerOneOracle(accounts[i + startingAccountsIndex]);
+      promises.push(response);
+    }
+
+    return new Promise((resolve, reject) => {
+      Promise.all(promises)
+        .then(() => {
+          const indexesPromises = [];
+
+          for (let i = 0; i < noOfOracles; i++) {
+            const response = getMyIndexes().call({
+              from: accounts[i + startingAccountsIndex],
+            });
+            indexesPromises.push(response);
+          }
+
+          Promise.all(indexesPromises)
+            .then((resp) => {
+              // console.log('response: ', resp);
+              resolve([...resp]);
+            })
+            .catch((error) => reject(error));
+        })
+        .catch((err) => reject(err));
+    });
   });
 }
 
-web3.eth.getAccounts().then((accounts) => {
-  //console.log(accounts);
+registerOracles(noOfOracles, 20)
+  .then((indexes) => {
+    oracles = indexes;
+    // console.log('oracles: ', oracles);
+  })
+  .catch((error) => console.log(error));
 
-  const noOfGoodOracles = 15;
-  const noOfBadOracles = 5;
-
-  const goodOracles = [];
-  const badOracles = [];
-
-  let promises = [];
-
-  const response = registerOneOracle(accounts[21]);
-
-  console.log(response);
-  promises.push(response);
-
-  // for (let i = 0; i < 1; i++) {
-  //   const response = registerOneOracle(accounts[i + 20]);
-  //   promises.push(response);
-  // }
-
-  Promise.all(promises)
-    .then(() => {
-      getMyIndexes()
-        .call({ from: accounts[21] })
-        .then((indexes) => {
-          console.log(indexes);
-        });
-      // goodOracles.concat([...res]);
-      // console.log('goodOracles: ', goodOracles);
-    })
-    .catch((err) => console.log(err));
-});
+// end register oracle
 
 flightSuretyApp.events.OracleRequest(
   {
