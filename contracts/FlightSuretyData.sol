@@ -29,6 +29,14 @@ contract FlightSuretyData {
     mapping(address => Airline) registeredAirlinesMapping;
     mapping(address => Candidate) votes;
 
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+    }
+    mapping(bytes32 => Flight) private flights;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -121,7 +129,16 @@ contract FlightSuretyData {
         view
         returns (bool)
     {
-        votes[_address].voters[_voter];
+        return votes[_address].voters[_voter];
+    }
+
+    function isRegisteredFlight(
+        string _flightName,
+        uint256 _timestamp,
+        address _airline
+    ) external view returns (bool) {
+        bytes32 flightKey = getFlightKey(_airline, _flightName, _timestamp);
+        return flights[flightKey].isRegistered;
     }
 
     /********************************************************************************************/
@@ -161,7 +178,7 @@ contract FlightSuretyData {
             candidate.voters[_voter] = true;
             candidate.noOfVotes = candidate.noOfVotes.add(1);
         } else {
-            Candidate freshCandidate;
+            Candidate storage freshCandidate;
             freshCandidate.voters[_voter] = true;
             freshCandidate.noOfVotes = 1;
             freshCandidate.exist = true;
@@ -175,6 +192,30 @@ contract FlightSuretyData {
 
         registeredAirlinesMapping[_airline].isFunded = true;
         registeredAirlines.push(_airline);
+    }
+
+    function registerFlight(
+        string _flightName,
+        uint8 _statusCode,
+        uint256 _updatedTimestamp,
+        address _airline
+    ) external {
+        // require(!flights[_flightName].isRegistered, "Flight already exists.");
+
+        bytes32 flightKey = getFlightKey(
+            _airline,
+            _flightName,
+            _updatedTimestamp
+        );
+
+        Flight memory flight = Flight({
+            isRegistered: true,
+            statusCode: _statusCode,
+            updatedTimestamp: _updatedTimestamp,
+            airline: _airline
+        });
+
+        flights[flightKey] = flight;
     }
 
     /**

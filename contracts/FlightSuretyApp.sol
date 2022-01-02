@@ -28,14 +28,6 @@ contract FlightSuretyApp {
 
     address private contractOwner; // Account used to deploy contract
 
-    struct Flight {
-        bool isRegistered;
-        uint8 statusCode;
-        uint256 updatedTimestamp;
-        address airline;
-    }
-    mapping(bytes32 => Flight) private flights;
-
     FlightSuretyDataReference flightSuretyData;
 
     /********************************************************************************************/
@@ -85,6 +77,18 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requiredNotRegisteredFlight(
+        string _flightName,
+        uint256 _timestamp,
+        address _airline
+    ) {
+        require(
+            !isRegisteredFlight(_flightName, _airline, _timestamp),
+            "Flight is already registered."
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -121,6 +125,19 @@ contract FlightSuretyApp {
         returns (bool)
     {
         return flightSuretyData.hasVotedAirline(_address, _voter);
+    }
+
+    function isRegisteredFlight(
+        string _flightName,
+        address _airline,
+        uint256 _timestamp
+    ) public view returns (bool) {
+        return
+            flightSuretyData.isRegisteredFlight(
+                _flightName,
+                _timestamp,
+                _airline
+            );
     }
 
     /********************************************************************************************/
@@ -173,7 +190,20 @@ contract FlightSuretyApp {
      * @dev Register a future flight for insuring.
      *
      */
-    function registerFlight() external pure {}
+    function registerFlight(string _flightName, uint256 _timestamp)
+        external
+        requireIsOperational
+        requireRegisteredAirline(msg.sender)
+        requiredFundedAirline(msg.sender)
+        requiredNotRegisteredFlight(_flightName, _timestamp, msg.sender)
+    {
+        flightSuretyData.registerFlight(
+            _flightName,
+            STATUS_CODE_UNKNOWN,
+            _timestamp,
+            msg.sender
+        );
+    }
 
     /**
      * @dev Called after oracle has updated flight status
@@ -403,4 +433,17 @@ contract FlightSuretyDataReference {
     function voteAirline(address _address, address _voter) external;
 
     function payAnte(address _airline) external payable;
+
+    function isRegisteredFlight(
+        string _flightName,
+        uint256 _timestamp,
+        address _airline
+    ) external view returns (bool);
+
+    function registerFlight(
+        string _flightName,
+        uint8 _statusCode,
+        uint256 _updatedTimestamp,
+        address _airline
+    ) external;
 }
