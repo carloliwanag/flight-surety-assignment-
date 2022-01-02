@@ -199,4 +199,22 @@ contract('Flight Surety Tests', async (accounts) => {
     );
     assert.ok(isRegistered);
   });
+
+  it('should allow funded airlines to register flights', async () => {
+    let secondAirline = '0xb122e9837790dec2602b3a2e80c9317ebf4edd23';
+    let flightName = 'MNL-2385';
+    let timestamp = Date.now();
+
+    await config.flightSuretyApp.registerFlight(flightName, timestamp, {
+      from: secondAirline,
+    });
+
+    let isRegistered = await config.flightSuretyApp.isRegisteredFlight(
+      flightName,
+      secondAirline,
+      timestamp
+    );
+
+    assert.ok(isRegistered);
+  });
 });
