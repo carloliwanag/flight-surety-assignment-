@@ -168,10 +168,36 @@ contract FlightSuretyData {
         view
         returns (bool)
     {
-        if (isRegisteredPassenger(_passenger)) {
-            return passengers[_passenger].insurances[_flightKey].isBought;
-        }
-        return false;
+        return passengers[_passenger].insurances[_flightKey].isBought;
+    }
+
+    function getInsurance(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        address _passenger
+    )
+        public
+        view
+        returns (
+            uint256 amount,
+            bool isCredited,
+            bool isBought,
+            bytes32 flightKey,
+            bool isRegistered
+        )
+    {
+        isRegistered = passengers[_passenger].isRegistered;
+
+        Passenger passenger = passengers[_passenger];
+
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+
+        Insurance memory insurance = passenger.insurances[_flightKey];
+        amount = insurance.amount;
+        isCredited = insurance.isCredited;
+        isBought = insurance.isBought;
+        flightKey = insurance.flightKey;
     }
 
     /********************************************************************************************/
@@ -256,25 +282,30 @@ contract FlightSuretyData {
      *
      */
     function buy(
-        bytes32 _flightKey,
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
         uint256 _amount,
         address _passenger
     ) external payable {
-        Insurance memory insurance = Insurance({
-            amount: _amount,
-            flightKey: _flightKey,
-            isBought: true,
-            isCredited: false
-        });
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+
+        Insurance memory insurance;
+        insurance.amount = _amount;
+        insurance.flightKey = _flightKey;
+        insurance.isBought = true;
+        insurance.isCredited = false;
 
         // check if passenger has bought insurance
         if (isRegisteredPassenger(_passenger)) {
             passengers[_passenger].insurances[_flightKey] = insurance;
         } else {
-            Passenger passenger;
+            Passenger memory passenger;
             passenger.isRegistered = true;
-            passenger.insurances[_flightKey] = insurance;
             passengers[_passenger] = passenger;
+            passengers[_passenger].insurances[_flightKey] = insurance;
+
+            // passenger.insurances[_flightKey] = insurance;
         }
     }
 
