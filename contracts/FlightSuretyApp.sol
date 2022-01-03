@@ -89,6 +89,31 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requiredRegisteredFlight(
+        string _flightName,
+        uint256 _timestamp,
+        address _airline
+    ) {
+        require(
+            isRegisteredFlight(_flightName, _airline, _timestamp),
+            "Flight does not exist."
+        );
+        _;
+    }
+
+    modifier requiredNotBoughtInsurance(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        address _passenger
+    ) {
+        require(
+            !hasBoughtInsurance(_airline, _flightName, _timestamp, _passenger),
+            "Passenger has insurance"
+        );
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -140,6 +165,24 @@ contract FlightSuretyApp {
             );
     }
 
+    function hasBoughtInsurance(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        address _passenger
+    ) public view returns (bool) {
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+        return flightSuretyData.hasBoughtInsurance(_flightKey, _passenger);
+    }
+
+    function isRegisteredPassenger(address _passenger)
+        public
+        view
+        returns (bool)
+    {
+        return flightSuretyData.isRegisteredPassenger(_passenger);
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -179,11 +222,12 @@ contract FlightSuretyApp {
     function fundAirlineAnte()
         external
         payable
+        requireIsOperational
         requireRegisteredAirline(msg.sender)
     {
         require(msg.value >= 10 ether, "Airline does not have enough ethers");
-        address(flightSuretyData).transfer(msg.value);
         flightSuretyData.payAnte(msg.sender);
+        address(flightSuretyData).transfer(msg.value);
     }
 
     /**
@@ -353,6 +397,30 @@ contract FlightSuretyApp {
         }
     }
 
+    function buyInsurance(
+        address _airline,
+        string _flight,
+        uint256 _timestamp
+    )
+        external
+        payable
+        requireIsOperational
+        requiredRegisteredFlight(_flight, _timestamp, _airline)
+        requiredNotBoughtInsurance(_airline, _flight, _timestamp, msg.sender)
+    {
+        require(msg.value > 1 wei, "Insufficient funds");
+        require(msg.value <= 1 ether, "Max 1 ether allowed");
+        // bytes32 _flightKey = getFlightKey(_airline, _flight, _timestamp);
+        flightSuretyData.buy(
+            _airline,
+            _flight,
+            _timestamp,
+            msg.value,
+            msg.sender
+        );
+        address(flightSuretyData).transfer(msg.value);
+    }
+
     function getFlightKey(
         address airline,
         string flight,
@@ -446,4 +514,22 @@ contract FlightSuretyDataReference {
         uint256 _updatedTimestamp,
         address _airline
     ) external;
+
+    function buy(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        uint256 _amount,
+        address _passenger
+    ) external payable;
+
+    function hasBoughtInsurance(bytes32 _flightKey, address _passenger)
+        public
+        view
+        returns (bool);
+
+    function isRegisteredPassenger(address _passenger)
+        public
+        view
+        returns (bool);
 }

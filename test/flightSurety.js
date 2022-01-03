@@ -217,4 +217,58 @@ contract('Flight Surety Tests', async (accounts) => {
 
     assert.ok(isRegistered);
   });
+
+  it('should allow passengers to purchase insurance', async () => {
+    let passenger1 = accounts[40];
+    let insuranceFee = web3.utils.toWei('1', 'ether');
+
+    let secondAirline = '0xb122e9837790dec2602b3a2e80c9317ebf4edd23';
+    let flightName = (Math.random() + 1).toString(36).substring(2);
+    let timestamp = Date.now();
+
+    await config.flightSuretyApp.registerFlight(flightName, timestamp, {
+      from: secondAirline,
+    });
+
+    await config.flightSuretyApp.buyInsurance(
+      secondAirline,
+      flightName,
+      timestamp,
+      {
+        from: passenger1,
+        value: insuranceFee,
+      }
+    );
+
+    const isRegistered = await config.flightSuretyApp.isRegisteredPassenger(
+      passenger1
+    );
+    assert.ok(isRegistered);
+
+    const hasBought = await config.flightSuretyApp.hasBoughtInsurance(
+      secondAirline,
+      flightName,
+      timestamp,
+      passenger1
+    );
+
+    assert.ok(hasBought);
+
+    // buy the same insurance should not be allowed
+
+    try {
+      await config.flightSuretyApp.buyInsurance(
+        secondAirline,
+        flightName,
+        timestamp,
+        {
+          from: passenger1,
+          value: insuranceFee,
+        }
+      );
+    } catch (err) {
+      const found = err.message.indexOf('Passenger has insurance') !== -1;
+      assert.ok(found);
+    }
+  });
 });

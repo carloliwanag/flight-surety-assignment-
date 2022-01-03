@@ -37,6 +37,20 @@ contract FlightSuretyData {
     }
     mapping(bytes32 => Flight) private flights;
 
+    struct Insurance {
+        uint256 amount;
+        bytes32 flightKey;
+        bool isCredited;
+        bool isBought;
+    }
+
+    struct Passenger {
+        mapping(bytes32 => Insurance) insurances;
+        bool isRegistered;
+    }
+
+    mapping(address => Passenger) passengers;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -141,6 +155,51 @@ contract FlightSuretyData {
         return flights[flightKey].isRegistered;
     }
 
+    function isRegisteredPassenger(address _passenger)
+        public
+        view
+        returns (bool)
+    {
+        return passengers[_passenger].isRegistered;
+    }
+
+    function hasBoughtInsurance(bytes32 _flightKey, address _passenger)
+        public
+        view
+        returns (bool)
+    {
+        return passengers[_passenger].insurances[_flightKey].isBought;
+    }
+
+    function getInsurance(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        address _passenger
+    )
+        public
+        view
+        returns (
+            uint256 amount,
+            bool isCredited,
+            bool isBought,
+            bytes32 flightKey,
+            bool isRegistered
+        )
+    {
+        isRegistered = passengers[_passenger].isRegistered;
+
+        Passenger passenger = passengers[_passenger];
+
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+
+        Insurance memory insurance = passenger.insurances[_flightKey];
+        amount = insurance.amount;
+        isCredited = insurance.isCredited;
+        isBought = insurance.isBought;
+        flightKey = insurance.flightKey;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -222,7 +281,33 @@ contract FlightSuretyData {
      * @dev Buy insurance for a flight
      *
      */
-    function buy() external payable {}
+    function buy(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        uint256 _amount,
+        address _passenger
+    ) external payable {
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+
+        Insurance memory insurance;
+        insurance.amount = _amount;
+        insurance.flightKey = _flightKey;
+        insurance.isBought = true;
+        insurance.isCredited = false;
+
+        // check if passenger has bought insurance
+        if (isRegisteredPassenger(_passenger)) {
+            passengers[_passenger].insurances[_flightKey] = insurance;
+        } else {
+            Passenger memory passenger;
+            passenger.isRegistered = true;
+            passengers[_passenger] = passenger;
+            passengers[_passenger].insurances[_flightKey] = insurance;
+
+            // passenger.insurances[_flightKey] = insurance;
+        }
+    }
 
     /**
      *  @dev Credits payouts to insurees
