@@ -37,6 +37,20 @@ contract FlightSuretyData {
     }
     mapping(bytes32 => Flight) private flights;
 
+    struct Insurance {
+        uint256 amount;
+        bytes32 flightKey;
+        bool isCredited;
+        bool isBought;
+    }
+
+    struct Passenger {
+        mapping(bytes32 => Insurance) insurances;
+        bool isRegistered;
+    }
+
+    mapping(address => Passenger) passengers;
+
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
     /********************************************************************************************/
@@ -141,6 +155,25 @@ contract FlightSuretyData {
         return flights[flightKey].isRegistered;
     }
 
+    function isRegisteredPassenger(address _passenger)
+        public
+        view
+        returns (bool)
+    {
+        return passengers[_passenger].isRegistered;
+    }
+
+    function hasBoughtInsurance(bytes32 _flightKey, address _passenger)
+        public
+        view
+        returns (bool)
+    {
+        if (isRegisteredPassenger(_passenger)) {
+            return passengers[_passenger].insurances[_flightKey].isBought;
+        }
+        return false;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -222,7 +255,28 @@ contract FlightSuretyData {
      * @dev Buy insurance for a flight
      *
      */
-    function buy() external payable {}
+    function buy(
+        bytes32 _flightKey,
+        uint256 _amount,
+        address _passenger
+    ) external payable {
+        Insurance memory insurance = Insurance({
+            amount: _amount,
+            flightKey: _flightKey,
+            isBought: true,
+            isCredited: false
+        });
+
+        // check if passenger has bought insurance
+        if (isRegisteredPassenger(_passenger)) {
+            passengers[_passenger].insurances[_flightKey] = insurance;
+        } else {
+            Passenger passenger;
+            passenger.isRegistered = true;
+            passenger.insurances[_flightKey] = insurance;
+            passengers[_passenger] = passenger;
+        }
+    }
 
     /**
      *  @dev Credits payouts to insurees
