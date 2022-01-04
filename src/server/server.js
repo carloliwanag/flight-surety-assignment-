@@ -20,8 +20,13 @@ const oracleFee = web3.utils.toWei('1.1', 'ether');
 const gasLimit = 6721975;
 
 // contract methods
-const { registerOracle, getMyIndexes, submitOracleResponse } =
-  flightSuretyApp.methods;
+const {
+  registerOracle,
+  getMyIndexes,
+  submitOracleResponse,
+  fundAirlineAnte,
+  registerFlight,
+} = flightSuretyApp.methods;
 
 const noOfOracles = 25;
 const startingAccountsIndex = 20;
@@ -133,6 +138,43 @@ function generateRandomResponse(oracles, values) {
     });
   });
 }
+
+// initialize airline and flights
+
+function initializeAirlinesFlights() {
+  web3.eth.getAccounts().then((accounts) => {
+    let antePrice = web3.utils.toWei('10', 'ether');
+
+    fundAirlineAnte().send({
+      from: accounts[1],
+      value: antePrice,
+      gas: gasLimit,
+    });
+
+    let flightName1 = 'POED-5934';
+    let timestamp1 = Date.now();
+    registerFlight(flightName1, timestamp1).send({
+      from: accounts[1],
+      gas: gasLimit,
+    });
+
+    let flightName2 = 'BDEY-2239';
+    let timestamp2 = Date.now();
+    registerFlight(flightName2, timestamp2).send({
+      from: accounts[1],
+      gas: gasLimit,
+    });
+
+    let flightName3 = 'KCQA-0953';
+    let timestamp3 = Date.now();
+    registerFlight(flightName3, timestamp3).send({
+      from: accounts[1],
+      gas: gasLimit,
+    });
+  });
+}
+
+initializeAirlinesFlights();
 
 // end generate flight status response
 flightSuretyApp.events.OracleRequest(
