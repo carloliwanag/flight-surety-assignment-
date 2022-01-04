@@ -34,6 +34,16 @@ export default class Contract {
     });
   }
 
+  fetchFlightsList() {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .getFlightsList()
+        .call({ from: self.owner })
+        .then((data) => resolve(data));
+    });
+  }
+
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods
