@@ -5,6 +5,25 @@ import './flightsurety.css';
 (async () => {
   let result = null;
 
+  function buyInsurance(airline, flight, timestamp) {
+    console.log('buy insurance');
+
+    contract
+      .buyInsurance(airline, flight, timestamp)
+      .then((response) => {
+        alert('Successfully bought insurance');
+      })
+      .catch((error) => {
+        if (error.message.indexOf('Passenger has insurance') !== -1) {
+          alert('You already bought insurance for this flight: ' + flight);
+        } else {
+          alert('System error, cannot proceed at this time: ', error.message);
+        }
+      });
+  }
+
+  function submitToOracles(airline, flight, timestamp) {}
+
   let contract = new Contract('localhost', () => {
     // Read transaction
     contract.isOperational((error, result) => {
@@ -32,34 +51,47 @@ import './flightsurety.css';
 
     DOM.elid('flights').addEventListener('click', async () => {
       console.log('Get List');
-      contract.fetchFlightsList().then((data) => {
-        console.log(data);
-        let displayDiv = DOM.elid('flightsList');
-        let section = DOM.section();
 
-        data.map((flightName) => {
-          let row = section.appendChild(DOM.div({ className: 'row top-20' }));
-          row.appendChild(DOM.div({ className: 'col-sm-4 field' }, flightName));
-          row.appendChild(
-            DOM.button(
-              { className: 'btn btn-primary ml-3', id: 'buy-' + flightName },
-              'Buy'
-            )
-          );
-          row.appendChild(
-            DOM.button(
-              {
-                className: 'btn btn-primary ml-3',
-                id: 'submit-' + flightName,
-              },
-              'Submit to Oracles'
-            )
-          );
-          section.appendChild(row);
+      fetch('http://localhost:3000/flights')
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data);
+
+          let displayDiv = DOM.elid('flightsList');
+          let section = DOM.section();
+
+          data.map((item) => {
+            let row = section.appendChild(DOM.div({ className: 'row top-20' }));
+            row.appendChild(
+              DOM.div({ className: 'col-sm-4 field' }, item.flight)
+            );
+            row.appendChild(
+              DOM.button(
+                {
+                  className: 'btn btn-primary ml-3',
+                  id: 'buy-' + item.flight,
+                  onclick: () =>
+                    buyInsurance(item.airline, item.flight, item.timestamp),
+                },
+                'Buy'
+              )
+            );
+            row.appendChild(
+              DOM.button(
+                {
+                  className: 'btn btn-primary ml-3',
+                  id: 'submit-' + item.flight,
+                  onclick: () =>
+                    submitToOracles(item.airline, item.flight, item.timestamp),
+                },
+                'Submit to Oracles'
+              )
+            );
+            section.appendChild(row);
+          });
+
+          displayDiv.append(section);
         });
-
-        displayDiv.append(section);
-      });
     });
   });
 })();
