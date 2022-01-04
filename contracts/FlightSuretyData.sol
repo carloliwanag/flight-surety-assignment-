@@ -1,9 +1,18 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
 contract FlightSuretyData {
     using SafeMath for uint256;
+
+    // Flight status codees
+    uint8 private constant STATUS_CODE_UNKNOWN = 0;
+    uint8 private constant STATUS_CODE_ON_TIME = 10;
+    uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
+    uint8 private constant STATUS_CODE_LATE_WEATHER = 30;
+    uint8 private constant STATUS_CODE_LATE_TECHNICAL = 40;
+    uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
     // uint256 private constant MULTIPLIER = 1.5;
 
@@ -38,6 +47,7 @@ contract FlightSuretyData {
         address airline;
     }
     mapping(bytes32 => Flight) private flights;
+    string[] public flightsList;
 
     struct Insurance {
         uint256 amount;
@@ -54,6 +64,7 @@ contract FlightSuretyData {
     }
 
     mapping(address => Passenger) passengers;
+    address[] private passengersList;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -206,6 +217,20 @@ contract FlightSuretyData {
         forPayment = insurance.forPayment;
     }
 
+    function getFlightStatus(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp
+    ) external view returns (uint8 status) {
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+
+        status = flights[_flightKey].statusCode;
+    }
+
+    function getFlightsList() external view returns (string[]) {
+        return flightsList;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -281,6 +306,66 @@ contract FlightSuretyData {
         });
 
         flights[flightKey] = flight;
+        flightsList.push(_flightName);
+    }
+
+    // TODO: only allow selected contracts to call this
+    function updateFlight(
+        string _flightName,
+        uint8 _statusCode,
+        uint256 _updatedTimestamp,
+        address _airline
+    ) external {
+        bytes32 flightKey = getFlightKey(
+            _airline,
+            _flightName,
+            _updatedTimestamp
+        );
+
+        flights[flightKey].statusCode = _statusCode;
+
+        // this is a side-effect, should be called by the App
+
+        if (
+            _statusCode != STATUS_CODE_UNKNOWN ||
+            _statusCode != STATUS_CODE_ON_TIME
+        ) {
+            updatePassengerInsurances(
+                _flightName,
+                _statusCode,
+                _updatedTimestamp,
+                _airline
+            );
+        }
+    }
+
+    function updatePassengerInsurances(
+        string _flightName,
+        uint8 _statusCode,
+        uint256 _updatedTimestamp,
+        address _airline
+    ) internal {
+        if (passengersList.length > 0) {
+            bytes32 flightKey = getFlightKey(
+                _airline,
+                _flightName,
+                _updatedTimestamp
+            );
+            for (uint256 i = 0; i < passengersList.length; i++) {
+                address passenger = passengersList[i];
+                if (
+                    passengers[passenger].insurances[flightKey].isBought &&
+                    !passengers[passenger].insurances[flightKey].forPayment
+                ) {
+                    creditInsurees(
+                        _airline,
+                        _flightName,
+                        _updatedTimestamp,
+                        passenger
+                    );
+                }
+            }
+        }
     }
 
     /**
@@ -313,6 +398,7 @@ contract FlightSuretyData {
             passengers[_passenger] = passenger;
             passengers[_passenger].insurances[_flightKey] = insurance;
 
+            passengersList.push(_passenger);
             // passenger.insurances[_flightKey] = insurance;
         }
     }
@@ -325,7 +411,7 @@ contract FlightSuretyData {
         string _flightName,
         uint256 _timestamp,
         address _passenger
-    ) external {
+    ) internal {
         bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
         Passenger storage passenger = passengers[_passenger];
         uint256 value = passenger.insurances[_flightKey].amount.mul(3).div(2);
@@ -350,6 +436,8 @@ contract FlightSuretyData {
         );
 
         _passenger.transfer(amount);
+
+        // TODO: delete the passeger from the list and mapping if there are no more insurance
     }
 
     /**
