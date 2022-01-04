@@ -197,6 +197,14 @@ contract FlightSuretyApp {
         return flightSuretyData.getFlightsList();
     }
 
+    function getAccountBalance(address _passenger)
+        public
+        view
+        returns (uint256)
+    {
+        return flightSuretyData.getAccountBalance(_passenger);
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -563,4 +571,9 @@ contract FlightSuretyDataReference {
     ) external view returns (uint8 status);
 
     function getFlightsList() external view returns (string[]);
+
+    function getAccountBalance(address _passenger)
+        external
+        view
+        returns (uint256);
 }

@@ -231,6 +231,14 @@ contract FlightSuretyData {
         return flightsList;
     }
 
+    function getAccountBalance(address _passenger)
+        external
+        view
+        returns (uint256)
+    {
+        return passengers[_passenger].balance;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
