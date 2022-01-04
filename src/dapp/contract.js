@@ -70,6 +70,55 @@ export default class Contract {
       .call({ from: self.owner }, callback);
   }
 
+  // calls fetchFlight status to trigger oracles
+  getFlightStatus(airline, flight, timestamp) {
+    let self = this;
+
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .fetchFlightStatus(airline, flight, timestamp)
+        .send({ from: self.owner })
+        .then((results) => {
+          // console.log(results);
+
+          resolve(results);
+        })
+        .catch((err) => reject(err));
+    });
+  }
+
+  // calls the smart contract to fetch status code of flight
+  getFlightStatusCode(airline, flight, timestamp) {
+    let self = this;
+
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .getFlightStatus(airline, flight, timestamp)
+        .call({ from: self.owner })
+        .then((result) => resolve(result))
+        .catch((err) => reject(err));
+    });
+  }
+
+  statusCodeToText(statusCode) {
+    switch (+statusCode) {
+      case 0:
+        return 'Uknown';
+      case 10:
+        return 'On Time';
+      case 20:
+        return 'Late Airline';
+      case 30:
+        return 'Late due to weather';
+      case 40:
+        return 'Late due to technical';
+      case 50:
+        return 'Late due to other reasons';
+      default:
+        return 'Uknown';
+    }
+  }
+
   fetchFlightStatus(flight, callback) {
     let self = this;
     let payload = {

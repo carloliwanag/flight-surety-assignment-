@@ -22,7 +22,30 @@ import './flightsurety.css';
       });
   }
 
-  function submitToOracles(airline, flight, timestamp) {}
+  function submitToOracles(airline, flight, timestamp) {
+    contract
+      .getFlightStatus(airline, flight, timestamp)
+      .then((results) => {
+        // console.log(results);
+
+        const { events } = results;
+        // console.log(events);
+
+        const values = events.OracleRequest.returnValues;
+
+        console.log(values);
+
+        contract
+          .getFlightStatusCode(airline, flight, timestamp)
+          .then((statusCode) => {
+            console.log('statusCode: ', statusCode);
+
+            DOM.elid('status-' + flight).textContent =
+              'Status: ' + contract.statusCodeToText(statusCode);
+          });
+      })
+      .catch((err) => alert('Error encountered. Please try again later.'));
+  }
 
   let contract = new Contract('localhost', () => {
     // Read transaction
@@ -58,7 +81,7 @@ import './flightsurety.css';
           console.log(data);
 
           let displayDiv = DOM.elid('flightsList');
-          let section = DOM.section();
+          let section = DOM.div({ className: 'container-md' });
 
           data.map((item) => {
             let row = section.appendChild(DOM.div({ className: 'row top-20' }));
@@ -87,6 +110,14 @@ import './flightsurety.css';
                 'Submit to Oracles'
               )
             );
+
+            row.appendChild(
+              DOM.span(
+                { className: 'font-weight-bold', id: 'status-' + item.flight },
+                'Status: Unknown'
+              )
+            );
+
             section.appendChild(row);
           });
 
