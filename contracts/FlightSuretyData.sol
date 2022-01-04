@@ -5,6 +5,8 @@ import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 contract FlightSuretyData {
     using SafeMath for uint256;
 
+    // uint256 private constant MULTIPLIER = 1.5;
+
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
@@ -42,11 +44,13 @@ contract FlightSuretyData {
         bytes32 flightKey;
         bool isCredited;
         bool isBought;
+        bool forPayment;
     }
 
     struct Passenger {
         mapping(bytes32 => Insurance) insurances;
         bool isRegistered;
+        uint256 balance;
     }
 
     mapping(address => Passenger) passengers;
@@ -184,7 +188,8 @@ contract FlightSuretyData {
             bool isCredited,
             bool isBought,
             bytes32 flightKey,
-            bool isRegistered
+            bool isRegistered,
+            bool forPayment
         )
     {
         isRegistered = passengers[_passenger].isRegistered;
@@ -198,6 +203,7 @@ contract FlightSuretyData {
         isCredited = insurance.isCredited;
         isBought = insurance.isBought;
         flightKey = insurance.flightKey;
+        forPayment = insurance.forPayment;
     }
 
     /********************************************************************************************/
@@ -295,6 +301,7 @@ contract FlightSuretyData {
         insurance.flightKey = _flightKey;
         insurance.isBought = true;
         insurance.isCredited = false;
+        insurance.forPayment = false;
 
         // check if passenger has bought insurance
         if (isRegisteredPassenger(_passenger)) {
@@ -302,6 +309,7 @@ contract FlightSuretyData {
         } else {
             Passenger memory passenger;
             passenger.isRegistered = true;
+            passenger.balance = 0;
             passengers[_passenger] = passenger;
             passengers[_passenger].insurances[_flightKey] = insurance;
 
@@ -312,13 +320,37 @@ contract FlightSuretyData {
     /**
      *  @dev Credits payouts to insurees
      */
-    function creditInsurees() external pure {}
+    function creditInsurees(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp,
+        address _passenger
+    ) external {
+        bytes32 _flightKey = getFlightKey(_airline, _flightName, _timestamp);
+        Passenger storage passenger = passengers[_passenger];
+        uint256 value = passenger.insurances[_flightKey].amount.mul(3).div(2);
+
+        passenger.insurances[_flightKey].isCredited = true;
+        passenger.insurances[_flightKey].forPayment = true;
+
+        passenger.balance.add(value);
+    }
 
     /**
      *  @dev Transfers eligible payout funds to insuree
      *
      */
-    function pay() external pure {}
+    function pay(address _passenger, uint256 amount) external {
+        require(isRegisteredPassenger(_passenger), "Should be a passenger");
+        require(passengers[_passenger].balance > 0, "Should have balance");
+        require(passengers[_passenger].balance >= amount, "Not enough balance");
+
+        passengers[_passenger].balance = passengers[_passenger].balance.sub(
+            amount
+        );
+
+        _passenger.transfer(amount);
+    }
 
     /**
      * @dev Initial funding for the insurance. Unless there are too many delayed flights
