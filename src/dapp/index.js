@@ -22,7 +22,27 @@ import './flightsurety.css';
       });
   }
 
-  function submitToOracles(airline, flight, timestamp) {}
+  function submitToOracles(airline, flight, timestamp) {
+    contract
+      .getFlightStatus(airline, flight, timestamp)
+      .then((results) => {
+        // console.log(results);
+
+        const { events } = results;
+        // console.log(events);
+
+        const values = events.OracleRequest.returnValues;
+
+        console.log(values);
+
+        contract
+          .getFlightStatusCode(airline, flight, timestamp)
+          .then((statusCode) => {
+            console.log('statusCode: ', statusCode);
+          });
+      })
+      .catch((err) => alert('Error encountered. Please try again later.'));
+  }
 
   let contract = new Contract('localhost', () => {
     // Read transaction

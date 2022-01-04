@@ -120,7 +120,7 @@ function generateRandomResponse(oracles, values) {
 
   const len = oracles.length;
   const good = len / 2 + 1;
-  let resp = STATUS_CODE_ON_TIME;
+  let resp = STATUS_CODE_LATE_AIRLINE; // manually override to set desired flight status
   oracles.forEach((oracle, index) => {
     if (index > good) {
       resp = responseArr[Math.floor(Math.random() * responseArr.length)];
