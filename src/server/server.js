@@ -127,7 +127,7 @@ function generateRandomResponse(oracles, values) {
     }
 
     console.log(
-      `sendind this response for oracle address ${oracle.address}:  ${resp}`
+      `sending this response for oracle address ${oracle.address}:  ${resp}`
     );
 
     submitOracleResponse(

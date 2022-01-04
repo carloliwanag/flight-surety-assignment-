@@ -100,6 +100,25 @@ export default class Contract {
     });
   }
 
+  statusCodeToText(statusCode) {
+    switch (+statusCode) {
+      case 0:
+        return 'Uknown';
+      case 10:
+        return 'On Time';
+      case 20:
+        return 'Late Airline';
+      case 30:
+        return 'Late due to weather';
+      case 40:
+        return 'Late due to technical';
+      case 50:
+        return 'Late due to other reasons';
+      default:
+        return 'Uknown';
+    }
+  }
+
   fetchFlightStatus(flight, callback) {
     let self = this;
     let payload = {
