@@ -34,6 +34,35 @@ export default class Contract {
     });
   }
 
+  // @deprecated
+  fetchFlightsList() {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .getFlightsList()
+        .call({ from: self.owner })
+        .then((data) => resolve(data));
+    });
+  }
+
+  buyInsurance(airline, flight, timestamp) {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .buyInsurance(airline, flight, timestamp)
+        .send({
+          from: '0xD1170d805aF984AB95f7ded8E579B560eA3E8472',
+          value: this.web3.utils.toWei('1', 'ether'),
+          gas: 6721975,
+        })
+        .then((data) => {
+          console.log(data);
+          resolve('ok');
+        })
+        .catch((err) => reject(err));
+    });
+  }
+
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods

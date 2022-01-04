@@ -1,4 +1,5 @@
 pragma solidity ^0.4.25;
+pragma experimental ABIEncoderV2;
 
 // It's important to avoid vulnerabilities due to numeric overflow bugs
 // OpenZeppelin's SafeMath library, when used correctly, protects agains such bugs
@@ -183,6 +184,19 @@ contract FlightSuretyApp {
         return flightSuretyData.isRegisteredPassenger(_passenger);
     }
 
+    function getFlightStatus(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp
+    ) public view returns (uint8) {
+        return
+            flightSuretyData.getFlightStatus(_airline, _flightName, _timestamp);
+    }
+
+    function getFlightsList() public view returns (string[]) {
+        return flightSuretyData.getFlightsList();
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -258,7 +272,9 @@ contract FlightSuretyApp {
         string memory flight,
         uint256 timestamp,
         uint8 statusCode
-    ) internal pure {}
+    ) internal requireIsOperational {
+        flightSuretyData.updateFlight(flight, statusCode, timestamp, airline);
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(
@@ -532,4 +548,19 @@ contract FlightSuretyDataReference {
         public
         view
         returns (bool);
+
+    function updateFlight(
+        string _flightName,
+        uint8 _statusCode,
+        uint256 _updatedTimestamp,
+        address _airline
+    ) external;
+
+    function getFlightStatus(
+        address _airline,
+        string _flightName,
+        uint256 _timestamp
+    ) external view returns (uint8 status);
+
+    function getFlightsList() external view returns (string[]);
 }
