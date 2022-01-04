@@ -4,6 +4,8 @@ import express from 'express';
 
 import Web3 from 'web3';
 
+import cors from 'cors';
+
 let config = Config['localhost'];
 let web3 = new Web3(
   new Web3.providers.WebsocketProvider(config.url.replace('http', 'ws'))
@@ -13,6 +15,8 @@ let flightSuretyApp = new web3.eth.Contract(
   FlightSuretyApp.abi,
   config.appAddress
 );
+
+let flights = [];
 
 let accountsAddresses = [];
 const oracleFee = web3.utils.toWei('1.1', 'ether');
@@ -158,6 +162,12 @@ function initializeAirlinesFlights() {
       gas: gasLimit,
     });
 
+    flights.push({
+      flight: flightName1,
+      timestamp: timestamp1,
+      airline: accounts[1],
+    });
+
     let flightName2 = 'BDEY-2239';
     let timestamp2 = Date.now();
     registerFlight(flightName2, timestamp2).send({
@@ -165,11 +175,23 @@ function initializeAirlinesFlights() {
       gas: gasLimit,
     });
 
+    flights.push({
+      flight: flightName2,
+      timestamp: timestamp2,
+      airline: accounts[1],
+    });
+
     let flightName3 = 'KCQA-0953';
     let timestamp3 = Date.now();
     registerFlight(flightName3, timestamp3).send({
       from: accounts[1],
       gas: gasLimit,
+    });
+
+    flights.push({
+      flight: flightName3,
+      timestamp: timestamp3,
+      airline: accounts[1],
     });
   });
 }
@@ -207,10 +229,17 @@ flightSuretyApp.events.OracleRequest(
 );
 
 const app = express();
+
+app.use(cors());
+
 app.get('/api', (req, res) => {
   res.send({
     message: 'An API for use with your Dapp!',
   });
+});
+
+app.get('/flights', (req, res) => {
+  res.send(JSON.stringify(flights));
 });
 
 export default app;
