@@ -115,6 +115,24 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireRegisteredPassenger(address _passenger) {
+        require(
+            isRegisteredPassenger(_passenger),
+            "Passenger should be registered."
+        );
+        _;
+    }
+
+    modifier requireHasBalance(address _passenger) {
+        require(getAccountBalance(_passenger) > 0, "No balance.");
+        _;
+    }
+
+    modifier requireHasEnoughBalance(address _passenger, uint256 amount) {
+        require(getAccountBalance(_passenger) >= amount, "Not enough balance");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -445,6 +463,15 @@ contract FlightSuretyApp {
         address(flightSuretyData).transfer(msg.value);
     }
 
+    function withdraw(uint256 _amount)
+        public
+        requireIsOperational
+        requireRegisteredPassenger(msg.sender)
+        requireHasEnoughBalance(msg.sender, _amount)
+    {
+        flightSuretyData.pay(msg.sender, _amount);
+    }
+
     function getFlightKey(
         address airline,
         string flight,
@@ -576,4 +603,6 @@ contract FlightSuretyDataReference {
         external
         view
         returns (uint256);
+
+    function pay(address _passenger, uint256 amount) external;
 }
