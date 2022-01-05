@@ -30,15 +30,38 @@ To view dapp:
 ## Develop Server
 
 `npm run server`
-`truffle test ./test/oracles.js`
 
-## Deploy
 
-To build dapp for prod:
-`npm run dapp:prod`
+## Running locally for testing:
+Needs at least 4 terminals open.
 
-Deploy the contents of the ./dapp folder
+1. (first terminal) - Run start-ganache-cli.sh or copy and paste the command 
+```
+ganache-cli -m "render bachelor above exact flash cloth license wine guard edit sugar enhance" --accounts=100 -p 8545
+```
 
+2. (second terminal) - Deploy the smart contract using the command) `truffle migrate --reset`
+
+3. (third terminal) - Run the server `npm run server`
+
+4. (fourth terminal) - Run the dapp `npm run dapp`
+
+
+First Airline: 0x8775cEFC4557B31D15Df9DA724cf6652E1CD1A73
+
+Passenger: 0xD1170d805aF984AB95f7ded8E579B560eA3E8472
+
+### Other notes
+- server initializes the flights by calling the smart contract and has API for pulling the flights for the DAPP
+- the oracles are purposely set to make the flights late, this can be overriden in the method generateRandomResponse(); line 123
+- due to the lack of time, I was not able to implement the security for making sure only selected app contract can only invoke the data contract. but since this is not a requirement, I did not finish this.
+
+### Steps for testing
+1. Click Show button to see the flights.
+2. Buy an insurance for a selected flight, input value in text field. click Buy button.
+3. Click Submit to Oracles button to see the flight arrival status.
+4. Check balance by clicking Get Balance button.
+5. Withdraw by putting value on the amount and then click Withdraw button.
 
 ## Resources
 
@@ -94,3 +117,24 @@ require(!hasVotedAirline(_address, msg.sender), "Caller has already voted for th
 ```
 
 To facilitate Multiparty consensus, the number of votes an airline has received is compared to the number of registered (paid) airlines array divided by 2. If greater, the airline is registered else, a vote is added onto it.
+
+
+### Oracle Flight Status
+
+App contract receives the data from the oracles. Once flight status is verified, flight information is updated in the Data contract. 
+
+If flight is late, the Passengers list is traversed to see if they have purchased the insurance for the flight, if yes the balance is updated.
+
+
+### Withrdawal of insurance
+The passenger struct has a balance property that is updated if one of the insurance bought has flight arrived late. 
+
+```
+struct Passenger {
+        mapping(bytes32 => Insurance) insurances;
+        bool isRegistered;
+        uint256 balance;
+    }
+
+```
+
