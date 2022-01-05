@@ -6,10 +6,9 @@ import './flightsurety.css';
   let result = null;
 
   function buyInsurance(airline, flight, timestamp) {
-    console.log('buy insurance');
-
+    let value = DOM.elid('amount-' + flight).value;
     contract
-      .buyInsurance(airline, flight, timestamp)
+      .buyInsurance(airline, flight, timestamp, value)
       .then((response) => {
         alert('Successfully bought insurance');
       })
@@ -91,6 +90,9 @@ import './flightsurety.css';
             row.appendChild(
               DOM.div({ className: 'col-sm-4 field' }, item.flight)
             );
+
+            row.appendChild(DOM.input({ id: 'amount-' + item.flight }));
+
             row.appendChild(
               DOM.button(
                 {
@@ -132,7 +134,7 @@ import './flightsurety.css';
       contract.getAccountBalance().then((balance) => {
         console.log(balance);
 
-        DOM.elid('accountBalance').textContent = balance + 'ether';
+        DOM.elid('accountBalance').textContent = balance + ' ETH';
       });
     });
 
