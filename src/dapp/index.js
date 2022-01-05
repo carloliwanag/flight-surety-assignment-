@@ -16,7 +16,7 @@ import './flightsurety.css';
         if (error.message.indexOf('Passenger has insurance') !== -1) {
           alert('You already bought insurance for this flight: ' + flight);
         } else {
-          alert('System error, cannot proceed at this time: ', error.message);
+          alert('System error, cannot proceed at this time: ' + error.message);
         }
       });
   }
@@ -45,7 +45,7 @@ import './flightsurety.css';
       })
       .catch((err) => {
         console.log(err);
-        alert('Error encountered. Please try again later.', err);
+        alert('Error encountered. Please try again later.' + err.message);
       });
   }
 
