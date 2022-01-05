@@ -44,7 +44,10 @@ import './flightsurety.css';
               'Status: ' + contract.statusCodeToText(statusCode);
           });
       })
-      .catch((err) => alert('Error encountered. Please try again later.'));
+      .catch((err) => {
+        console.log(err);
+        alert('Error encountered. Please try again later.', err);
+      });
   }
 
   let contract = new Contract('localhost', () => {
@@ -123,6 +126,35 @@ import './flightsurety.css';
 
           displayDiv.append(section);
         });
+    });
+
+    DOM.elid('balance').addEventListener('click', () => {
+      contract.getAccountBalance().then((balance) => {
+        console.log(balance);
+
+        DOM.elid('accountBalance').textContent = balance + 'ether';
+      });
+    });
+
+    DOM.elid('withdraw').addEventListener('click', () => {
+      console.log('withdraw');
+      let value = DOM.elid('amount').value;
+      console.log(value);
+      if (!value) {
+        alert('Enter valid amount');
+        // return;
+      } else {
+        contract
+          .withdraw(value)
+          .then((data) => {
+            console.log(data);
+            alert('Successfully transfered to your account.');
+          })
+          .catch((err) => {
+            console.log(err);
+            alert(err.message);
+          });
+      }
     });
   });
 })();

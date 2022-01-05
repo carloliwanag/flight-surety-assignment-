@@ -231,6 +231,14 @@ contract FlightSuretyData {
         return flightsList;
     }
 
+    function getAccountBalance(address _passenger)
+        external
+        view
+        returns (uint256)
+    {
+        return passengers[_passenger].balance;
+    }
+
     /********************************************************************************************/
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
@@ -354,8 +362,8 @@ contract FlightSuretyData {
             for (uint256 i = 0; i < passengersList.length; i++) {
                 address passenger = passengersList[i];
                 if (
-                    passengers[passenger].insurances[flightKey].isBought &&
-                    !passengers[passenger].insurances[flightKey].forPayment
+                    passengers[passenger].insurances[flightKey].isBought && // passenger has the insurance
+                    !passengers[passenger].insurances[flightKey].forPayment // prevents double payment
                 ) {
                     creditInsurees(
                         _airline,
@@ -419,7 +427,7 @@ contract FlightSuretyData {
         passenger.insurances[_flightKey].isCredited = true;
         passenger.insurances[_flightKey].forPayment = true;
 
-        passenger.balance.add(value);
+        passenger.balance = passenger.balance.add(value);
     }
 
     /**

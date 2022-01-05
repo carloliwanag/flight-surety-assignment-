@@ -63,6 +63,18 @@ export default class Contract {
     });
   }
 
+  withdraw(amount) {
+    let self = this;
+
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .withdraw(this.web3.utils.toWei('' + amount, 'ether'))
+        .send({ from: '0xD1170d805aF984AB95f7ded8E579B560eA3E8472' })
+        .then((data) => resolve(data))
+        .catch((err) => reject(err));
+    });
+  }
+
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods
@@ -79,8 +91,6 @@ export default class Contract {
         .fetchFlightStatus(airline, flight, timestamp)
         .send({ from: self.owner })
         .then((results) => {
-          // console.log(results);
-
           resolve(results);
         })
         .catch((err) => reject(err));
@@ -117,6 +127,22 @@ export default class Contract {
       default:
         return 'Uknown';
     }
+  }
+
+  getAccountBalance() {
+    let self = this;
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .getAccountBalance('0xD1170d805aF984AB95f7ded8E579B560eA3E8472')
+        .call({
+          from: '0xD1170d805aF984AB95f7ded8E579B560eA3E8472',
+        })
+        .then((data) => {
+          console.log(data);
+          resolve(this.web3.utils.fromWei(data + '', 'ether'));
+        })
+        .catch((err) => reject(err));
+    });
   }
 
   fetchFlightStatus(flight, callback) {
