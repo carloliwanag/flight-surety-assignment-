@@ -135,6 +135,27 @@ import './flightsurety.css';
         DOM.elid('accountBalance').textContent = balance + 'ether';
       });
     });
+
+    DOM.elid('withdraw').addEventListener('click', () => {
+      console.log('withdraw');
+      let value = DOM.elid('amount').value;
+      console.log(value);
+      if (!value) {
+        alert('Enter valid amount');
+        // return;
+      } else {
+        contract
+          .withdraw(value)
+          .then((data) => {
+            console.log(data);
+            alert('Successfully transfered to your account.');
+          })
+          .catch((err) => {
+            console.log(err);
+            alert(err.message);
+          });
+      }
+    });
   });
 })();
 

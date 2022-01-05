@@ -63,6 +63,18 @@ export default class Contract {
     });
   }
 
+  withdraw(amount) {
+    let self = this;
+
+    return new Promise((resolve, reject) => {
+      self.flightSuretyApp.methods
+        .withdraw(this.web3.utils.toWei('' + amount, 'ether'))
+        .send({ from: '0xD1170d805aF984AB95f7ded8E579B560eA3E8472' })
+        .then((data) => resolve(data))
+        .catch((err) => reject(err));
+    });
+  }
+
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods
