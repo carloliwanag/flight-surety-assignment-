@@ -335,7 +335,7 @@ contract FlightSuretyData {
         // this is a side-effect, should be called by the App
 
         if (
-            _statusCode != STATUS_CODE_UNKNOWN ||
+            _statusCode != STATUS_CODE_UNKNOWN &&
             _statusCode != STATUS_CODE_ON_TIME
         ) {
             updatePassengerInsurances(

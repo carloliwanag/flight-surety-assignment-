@@ -6,10 +6,9 @@ import './flightsurety.css';
   let result = null;
 
   function buyInsurance(airline, flight, timestamp) {
-    console.log('buy insurance');
-
+    let value = DOM.elid('amount-' + flight).value;
     contract
-      .buyInsurance(airline, flight, timestamp)
+      .buyInsurance(airline, flight, timestamp, value)
       .then((response) => {
         alert('Successfully bought insurance');
       })
@@ -17,7 +16,7 @@ import './flightsurety.css';
         if (error.message.indexOf('Passenger has insurance') !== -1) {
           alert('You already bought insurance for this flight: ' + flight);
         } else {
-          alert('System error, cannot proceed at this time: ', error.message);
+          alert('System error, cannot proceed at this time: ' + error.message);
         }
       });
   }
@@ -46,7 +45,7 @@ import './flightsurety.css';
       })
       .catch((err) => {
         console.log(err);
-        alert('Error encountered. Please try again later.', err);
+        alert('Error encountered. Please try again later.' + err.message);
       });
   }
 
@@ -91,6 +90,9 @@ import './flightsurety.css';
             row.appendChild(
               DOM.div({ className: 'col-sm-4 field' }, item.flight)
             );
+
+            row.appendChild(DOM.input({ id: 'amount-' + item.flight }));
+
             row.appendChild(
               DOM.button(
                 {
@@ -132,7 +134,7 @@ import './flightsurety.css';
       contract.getAccountBalance().then((balance) => {
         console.log(balance);
 
-        DOM.elid('accountBalance').textContent = balance + 'ether';
+        DOM.elid('accountBalance').textContent = balance + ' ETH';
       });
     });
 

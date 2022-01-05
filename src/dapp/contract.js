@@ -45,14 +45,21 @@ export default class Contract {
     });
   }
 
-  buyInsurance(airline, flight, timestamp) {
+  buyInsurance(airline, flight, timestamp, value) {
     let self = this;
+
+    let amount = this.web3.utils.toWei('1', 'ether');
+
+    if (value) {
+      amount = this.web3.utils.toWei('' + value, 'ether');
+    }
+
     return new Promise((resolve, reject) => {
       self.flightSuretyApp.methods
         .buyInsurance(airline, flight, timestamp)
         .send({
           from: '0xD1170d805aF984AB95f7ded8E579B560eA3E8472',
-          value: this.web3.utils.toWei('1', 'ether'),
+          value: amount,
           gas: 6721975,
         })
         .then((data) => {
